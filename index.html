@@ -132,22 +132,51 @@
             const patientText = await patientInput.text();
             const beltText = await beltInput.text();
 
-            // 1. Parse Activities
+            // 1. Parse Activities (UPDATED FOR SAFETY)
             globalActivities = [];
             const typesSet = new Set();
             const daysSet = new Set();
 
             patientText.trim().split('\n').slice(1).forEach(line => {
+                if (!line.trim()) return; // Skip empty lines
                 const cols = line.split(',');
-                if (cols.length === 3) {
+                if (cols.length >= 3) {
                     const type = cols[0].trim();
-                    const start = new Date(cols[1]);
-                    
+                    // .trim() is CRUCIAL here to strip out hidden \r characters!
+                    const startStr = cols[1].trim(); 
+                    const endStr = cols[2].trim();   
+
                     typesSet.add(type);
-                    daysSet.add(cols[1].split('T')[0]); // Extract YYYY-MM-DD
+                    daysSet.add(startStr.split('T')[0]); 
                     
-                    globalActivities.push({ type: type, start: start, end: new Date(cols[2]) });
+                    // Convert directly to raw milliseconds (.getTime) to prevent Chart errors
+                    globalActivities.push({ 
+                        type: type, 
+                        start: new Date(startStr).getTime(), 
+                        end: new Date(endStr).getTime() 
+                    });
                 }
+            });
+
+            // 2. Parse Coughs (UPDATED FOR 4-COLUMN & MAC/SAFARI)
+            globalCoughs = [];
+            beltText.trim().split('\n').slice(1).forEach(line => {
+                if (!line.trim()) return;
+                const cols = line.split(',');
+                
+                if (cols.length >= 4) {
+                    const classification = cols[3].trim();
+                    if (classification === 'Cough') {
+                        // Forcefully swap the space for a 'T' so Safari/Mac can read it
+                        const safeDateStr = cols[0].trim().replace(' ', 'T');
+                        
+                        daysSet.add(safeDateStr.split('T')[0]); 
+                        globalCoughs.push({ 
+                            x: new Date(safeDateStr).getTime(), 
+                            y: parseFloat(cols[2]) 
+                        }); 
+                    }
+                } 
             });
 
             // 2. Parse Coughs (UPDATED FOR 4-COLUMN FORMAT)
