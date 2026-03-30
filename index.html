@@ -25,341 +25,298 @@
     <main class="flex-grow p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
         
         <div class="lg:col-span-1 space-y-6">
-            
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <h2 class="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><i data-lucide="upload-cloud" size="18"></i> Data Import</h2>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">1. Patient Activity (.csv)</label>
-                        <input type="file" id="patientFile" accept=".csv" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">1. Select Patient</label>
+                        <select id="patientSelector" class="w-full text-xs text-slate-700 bg-blue-50 border-0 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer font-bold">
+                            <option value="" disabled selected>Loading patients...</option>
+                        </select>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">2. ESP32 Belt (.csv)</label>
-                        <input type="file" id="beltFile" accept=".csv" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                    
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">2. ESP32 Belt Data</label>
+                        <div class="flex gap-2 mb-3">
+                            <button id="connectBtn" onclick="connectESP32()" class="flex-1 bg-emerald-100 text-emerald-700 font-bold py-2 rounded-lg text-xs hover:bg-emerald-200 transition border border-emerald-200 flex justify-center items-center gap-1">
+                                <i data-lucide="plug" size="14"></i> Connect
+                            </button>
+                            <button id="pullDataBtn" onclick="pullDataFromESP32()" class="hidden flex-1 bg-slate-800 text-white font-bold py-2 rounded-lg text-xs hover:bg-slate-700 transition flex justify-center items-center gap-1">
+                                <i data-lucide="download" size="14"></i> Pull Data
+                            </button>
+                        </div>
+                        <div class="text-[9px] text-center text-slate-400 mb-2 font-bold uppercase tracking-widest">- OR UPLOAD FILE -</div>
+                        <input type="file" id="beltFile" onchange="usbBeltData=''" accept=".csv" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-200 file:text-slate-700 cursor-pointer">
+
+                        <div id="rawDataContainer" class="hidden mt-3 pt-3 border-t border-slate-200">
+                            <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Raw USB Output Preview:</label>
+                            <textarea id="rawDataView" readonly class="w-full h-32 bg-slate-900 text-emerald-400 font-mono text-[10px] p-2 rounded-lg outline-none resize-y shadow-inner"></textarea>
+                        </div>
                     </div>
-                    <button onclick="processData()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition shadow-md flex justify-center items-center gap-2 mt-4">
+
+                    <button onclick="processData()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition shadow-md flex justify-center items-center gap-2 mt-2">
                         Generate Analysis
                     </button>
                 </div>
             </div>
 
             <div id="colorLegendCard" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hidden">
-                <h2 class="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><i data-lucide="palette" size="18"></i> Activity Colors</h2>
-                <div id="legendContainer" class="space-y-3">
-                    </div>
-            </div>
-
-            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                <h2 class="font-bold text-blue-800 mb-2 text-sm flex items-center gap-2"><i data-lucide="flask-conical" size="16"></i> Testing Tools</h2>
-                <button onclick="generateFakeBeltData()" class="w-full bg-white text-blue-700 border border-blue-200 font-bold py-2 rounded-lg text-xs hover:bg-blue-100 transition shadow-sm">
-                    Download Sample Belt CSV
-                </button>
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="palette" size="18"></i> Activity Colors</h2>
+                    <button onclick="resetColors()" class="text-xs font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1 transition"><i data-lucide="rotate-ccw" size="14"></i> Reset</button>
+                </div>
+                <div id="legendContainer" class="space-y-3"></div>
             </div>
         </div>
 
         <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-            
             <div class="flex border-b border-slate-200 mb-6 gap-6">
-                <button onclick="switchTab('full')" id="tab-full" class="pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition">Full Study Timeline</button>
-                <button onclick="switchTab('daily')" id="tab-daily" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition">Daily View</button>
+                <button onclick="switchTab('daily')" id="tab-daily" class="pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition">Daily View</button>
+                <button onclick="switchTab('full')" id="tab-full" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition">Full Study Timeline</button>
                 <button onclick="switchTab('average')" id="tab-average" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition">Average Patterns</button>
             </div>
 
             <div class="flex justify-between items-center mb-4 min-h-[40px]">
-                <h2 id="chartTitle" class="font-bold text-lg text-slate-800">Cough Frequency vs. Triggers</h2>
-                
-                <div id="dailyControls" class="hidden flex gap-2 items-center">
+                <h2 id="chartTitle" class="font-bold text-lg text-slate-800">Isolated Daily Timeline</h2>
+                <div id="dailyControls" class="flex gap-2 items-center">
                     <label class="text-sm font-bold text-slate-500">Select Day:</label>
                     <select id="daySelector" onchange="renderCurrentView()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500"></select>
                 </div>
-
                 <button id="resetZoomBtn" onclick="resetZoom()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-3 rounded-lg transition font-medium">Reset Zoom</button>
             </div>
             
-            <div class="flex-grow relative min-h-[500px] w-full bg-slate-50 rounded-xl border border-slate-100 p-4">
+            <div class="flex-grow relative min-h-[350px] w-full bg-slate-50 rounded-xl border border-slate-100 p-4">
                 <canvas id="clinicianChart"></canvas>
             </div>
             <p id="chartHelper" class="text-center text-[10px] uppercase tracking-wider text-slate-400 mt-4 font-bold">Scroll to zoom. Click and drag to pan.</p>
         </div>
-
     </main>
 
     <script>
-        lucide.createIcons();
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1UEs7qzOsxMkA2v2vC2ECgyANnUWTst4nYkQXNw-AgVetulsROWyccvt6f-FbSpLKnA/exec';
+
+        window.onload = function() {
+            lucide.createIcons();
+            fetchPatientList();
+        };
+
         let chartInstance = null;
-        let currentTab = 'full';
-        
-        // Global Data Storage
+        let currentTab = 'daily'; 
         let globalActivities = [];
         let globalCoughs = [];
         let uniqueDays = [];
-        
-        // Default Color Palette mapped to dynamically found activities
+        let globalTypesSet = []; 
         let activityColors = {};
         const fallbackColors = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+        let customPresets = []; 
+        let openPickerType = null;
+        let serialPort;
+        let usbBeltData = ""; 
 
-        function switchTab(tab) {
-            currentTab = tab;
-            
-            // Update UI styling
-            ['full', 'daily', 'average'].forEach(t => {
-                document.getElementById(`tab-${t}`).className = t === tab 
-                    ? "pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition" 
-                    : "pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition";
-            });
+        async function fetchPatientList() {
+            const selector = document.getElementById('patientSelector');
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getPatients`);
+                const names = await response.json();
+                if (names.length === 0) {
+                    selector.innerHTML = `<option value="" disabled>No patients found</option>`;
+                    return;
+                }
+                selector.innerHTML = `<option value="" disabled selected>Select a Patient...</option>` + 
+                    names.map(name => `<option value="${name}">${name}</option>`).join('');
+            } catch (error) {
+                console.error("Database Error:", error);
+                selector.innerHTML = `<option value="" disabled>Error loading database</option>`;
+            }
+        }
 
-            // Toggle Specific Controls
-            document.getElementById('dailyControls').classList.toggle('hidden', tab !== 'daily');
-            document.getElementById('resetZoomBtn').classList.toggle('hidden', tab === 'average');
-            
-            // Update Text
-            if(tab === 'full') document.getElementById('chartTitle').innerText = "Full Study Timeline";
-            if(tab === 'daily') document.getElementById('chartTitle').innerText = "Isolated Daily Timeline";
-            if(tab === 'average') document.getElementById('chartTitle').innerText = "Average Coughs per Hour of Day";
-            
-            document.getElementById('chartHelper').innerText = tab === 'average' 
-                ? "Aggregated data across the entire study period." 
-                : "Scroll to zoom. Click and drag to pan.";
+        async function connectESP32() {
+            try {
+                serialPort = await navigator.serial.requestPort();
+                await serialPort.open({ baudRate: 115200 }); 
+                document.getElementById('connectBtn').innerHTML = `<i data-lucide="check-circle" size="14"></i> Connected`;
+                document.getElementById('connectBtn').classList.replace('bg-emerald-100', 'bg-emerald-500');
+                document.getElementById('connectBtn').classList.replace('text-emerald-700', 'text-white');
+                document.getElementById('pullDataBtn').classList.remove('hidden');
+                lucide.createIcons();
+            } catch (err) { alert("Connection failed. Use Chrome/Edge."); }
+        }
 
-            renderCurrentView();
+        async function pullDataFromESP32() {
+            if (!serialPort) return alert("Connect belt first.");
+            const btn = document.getElementById('pullDataBtn');
+            btn.innerHTML = `<i data-lucide="loader" class="animate-spin" size="14"></i> Reading...`;
+            usbBeltData = ""; 
+            try {
+                const encoder = new TextEncoder();
+                const writer = serialPort.writable.getWriter();
+                await writer.write(encoder.encode("SEND_DATA\n"));
+                writer.releaseLock();
+                const decoder = new TextDecoder();
+                const reader = serialPort.readable.getReader();
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    usbBeltData += decoder.decode(value, { stream: true });
+                    if (usbBeltData.includes("END_OF_FILE")) {
+                        usbBeltData = usbBeltData.replace("END_OF_FILE", ""); 
+                        const headerIndex = usbBeltData.indexOf("Timestamp,");
+                        if (headerIndex !== -1) usbBeltData = usbBeltData.substring(headerIndex);
+                        break;
+                    }
+                }
+                reader.releaseLock();
+                document.getElementById('rawDataContainer').classList.remove('hidden');
+                document.getElementById('rawDataView').value = usbBeltData || "No data on SD card.";
+                btn.innerHTML = `<i data-lucide="check" size="14"></i> Data Ready!`;
+                btn.classList.replace('bg-slate-800', 'bg-green-600');
+                lucide.createIcons();
+            } catch (error) { btn.innerHTML = `<i data-lucide="download" size="14"></i> Pull Data`; }
         }
 
         async function processData() {
-            const patientInput = document.getElementById('patientFile').files[0];
+            const patientId = document.getElementById('patientSelector').value;
             const beltInput = document.getElementById('beltFile').files[0];
-            if (!patientInput || !beltInput) return alert("Please upload both CSV files.");
+            if (!patientId) return alert("Select a patient from the dropdown.");
+            
+            let beltText = usbBeltData !== "" ? usbBeltData : (beltInput ? await beltInput.text() : null);
+            if (!beltText) return alert("Please Pull Data from the belt or upload a hardware CSV file.");
 
-            const patientText = await patientInput.text();
-            const beltText = await beltInput.text();
+            const btn = document.querySelector('button[onclick="processData()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader" class="animate-spin" size="14"></i> Syncing Cloud...`;
+            lucide.createIcons();
 
-            // 1. Parse Activities (UPDATED FOR SAFETY)
-            globalActivities = [];
-            const typesSet = new Set();
-            const daysSet = new Set();
+            try {
+                // Fetch JSON Logs from your Apps Script (Bypasses CORS)
+                const response = await fetch(`${SCRIPT_URL}?action=getLogs&patientId=${encodeURIComponent(patientId)}`);
+                const logs = await response.json();
 
-            patientText.trim().split('\n').slice(1).forEach(line => {
-                if (!line.trim()) return; // Skip empty lines
-                const cols = line.split(',');
-                if (cols.length >= 3) {
-                    const type = cols[0].trim();
-                    // .trim() is CRUCIAL here to strip out hidden \r characters!
-                    const startStr = cols[1].trim(); 
-                    const endStr = cols[2].trim();   
+                const daysSet = new Set();
+                const typesSet = new Set();
 
-                    typesSet.add(type);
-                    daysSet.add(startStr.split('T')[0]); 
+                globalActivities = logs.map(log => {
+                    // Browser-safe Date conversion
+                    const cleanStart = log.start.toString().replace(' ', 'T');
+                    const cleanEnd = log.end.toString().replace(' ', 'T');
+                    const startTs = new Date(cleanStart).getTime();
+                    const endTs = new Date(cleanEnd).getTime();
                     
-                    // Convert directly to raw milliseconds (.getTime) to prevent Chart errors
-                    globalActivities.push({ 
-                        type: type, 
-                        start: new Date(startStr).getTime(), 
-                        end: new Date(endStr).getTime() 
-                    });
-                }
-            });
+                    typesSet.add(log.type);
+                    daysSet.add(new Date(startTs).toISOString().split('T')[0]);
+                    return { type: log.type, start: startTs, end: endTs };
+                });
 
-            // 2. Parse Coughs (UPDATED FOR 4-COLUMN & MAC/SAFARI)
-            globalCoughs = [];
-            beltText.trim().split('\n').slice(1).forEach(line => {
-                if (!line.trim()) return;
-                const cols = line.split(',');
-                
-                if (cols.length >= 4) {
-                    const classification = cols[3].trim();
-                    if (classification === 'Cough') {
-                        // Forcefully swap the space for a 'T' so Safari/Mac can read it
+                globalTypesSet = Array.from(typesSet);
+                globalCoughs = [];
+                beltText.trim().split('\n').slice(1).forEach(line => {
+                    const cols = line.split(',');
+                    if (cols.length >= 4 && cols[3].trim() === 'Cough') {
                         const safeDateStr = cols[0].trim().replace(' ', 'T');
-                        
                         daysSet.add(safeDateStr.split('T')[0]); 
-                        globalCoughs.push({ 
-                            x: new Date(safeDateStr).getTime(), 
-                            y: parseFloat(cols[2]) 
-                        }); 
+                        globalCoughs.push({ x: new Date(safeDateStr).getTime(), y: parseFloat(cols[2]) }); 
                     }
-                } 
+                });
+
+                uniqueDays = Array.from(daysSet).sort();
+                document.getElementById('daySelector').innerHTML = uniqueDays.map(d => `<option value="${d}">${new Date(d + 'T12:00:00').toLocaleDateString()}</option>`).join('');
+                resetColors(false); 
+                document.getElementById('colorLegendCard').classList.remove('hidden');
+                switchTab('daily');
+            } catch (e) {
+                console.error("Processing Error:", e);
+                alert("Failed to sync with Google Sheets. Make sure the Apps Script is deployed to 'Anyone'.");
+            } finally {
+                btn.innerHTML = originalText;
+                lucide.createIcons();
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            ['full', 'daily', 'average'].forEach(t => {
+                document.getElementById(`tab-${t}`).className = t === tab ? "pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition" : "pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition";
             });
-
-            // 2. Parse Coughs (UPDATED FOR 4-COLUMN FORMAT)
-            globalCoughs = [];
-            beltText.trim().split('\n').slice(1).forEach(line => {
-                const cols = line.split(',');
-                
-                // Check if it's the new 4-column clinical format
-                if (cols.length >= 4) {
-                    const classification = cols[3].trim();
-                    
-                    // Filter out movement artifacts, only plot real coughs
-                    if (classification === 'Cough') {
-                        const dateObj = new Date(cols[0]);
-                        // Hardware timestamp uses a space instead of 'T'
-                        daysSet.add(cols[0].split(' ')[0]); 
-                        // Peak force is in column index 2
-                        globalCoughs.push({ x: dateObj, y: parseFloat(cols[2]) }); 
-                    }
-                } 
-                // Fallback just in case someone uses the old 2-column sample data
-                else if (cols.length === 2) {
-                    const dateObj = new Date(cols[0]);
-                    daysSet.add(cols[0].split('T')[0]);
-                    globalCoughs.push({ x: dateObj, y: parseFloat(cols[1]) });
-                }
-            });
-
-            // 3. Setup Days Dropdown
-            uniqueDays = Array.from(daysSet).sort();
-            const daySelector = document.getElementById('daySelector');
-            daySelector.innerHTML = uniqueDays.map(d => `<option value="${d}">${new Date(d).toLocaleDateString()}</option>`).join('');
-
-            // 4. Setup Dynamic Colors
-            activityColors = {};
-            Array.from(typesSet).forEach((type, index) => {
-                activityColors[type] = fallbackColors[index % fallbackColors.length];
-            });
-            buildColorLegend();
-
-            // 5. Draw
-            document.getElementById('colorLegendCard').classList.remove('hidden');
+            document.getElementById('dailyControls').classList.toggle('hidden', tab !== 'daily');
+            document.getElementById('resetZoomBtn').classList.toggle('hidden', tab === 'average');
             renderCurrentView();
+        }
+
+        function resetColors(shouldRender = true) {
+            activityColors = {};
+            globalTypesSet.forEach((t, i) => activityColors[t] = fallbackColors[i % fallbackColors.length]);
+            buildColorLegend();
+            if (shouldRender) renderCurrentView();
         }
 
         function buildColorLegend() {
             const container = document.getElementById('legendContainer');
+            const allPresets = [...fallbackColors, ...customPresets];
             container.innerHTML = Object.keys(activityColors).map(type => `
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-slate-700">${type}</span>
-                    <input type="color" value="${activityColors[type]}" onchange="updateColor('${type}', this.value)" class="w-8 h-8 rounded border-none cursor-pointer p-0 bg-transparent">
-                </div>
-            `).join('');
+                <div class="flex flex-col border-b border-slate-100 last:border-0 pb-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-slate-700">${type}</span>
+                        <button onclick="togglePicker('${type}')" class="w-8 h-8 rounded shadow-sm border border-slate-300" style="background-color: ${activityColors[type]}40; border-color: ${activityColors[type]}"></button>
+                    </div>
+                    <div id="picker-${type}" class="${openPickerType === type ? 'block' : 'hidden'} mt-3 p-3 bg-white border border-slate-200 shadow-md rounded-xl">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            ${allPresets.map(color => `<button onclick="applyColor('${type}', '${color}')" class="w-6 h-6 rounded-full" style="background-color: ${color}"></button>`).join('')}
+                        </div>
+                        <div class="flex items-center justify-between border-t pt-3">
+                            <input type="color" id="custom-${type}" class="w-6 h-6">
+                            <button onclick="addPresetAndApply('${type}')" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded">Apply</button>
+                        </div>
+                    </div>
+                </div>`).join('');
         }
 
-        function updateColor(type, hex) {
-            activityColors[type] = hex;
-            renderCurrentView(); // Instantly redraws the graph with new color
-        }
+        function togglePicker(t) { openPickerType = openPickerType === t ? null : t; buildColorLegend(); }
+        function applyColor(t, c) { activityColors[t] = c; openPickerType = null; buildColorLegend(); renderCurrentView(); }
+        function addPresetAndApply(t) { const c = document.getElementById(`custom-${t}`).value; if (!customPresets.includes(c)) customPresets.push(c); applyColor(t, c); }
 
         function renderCurrentView() {
-            if (globalActivities.length === 0 && globalCoughs.length === 0) return; // Prevent drawing if no data
-
-            if (currentTab === 'full') drawTimelineChart(null);
-            else if (currentTab === 'daily') drawTimelineChart(document.getElementById('daySelector').value);
-            else if (currentTab === 'average') drawAverageChart();
+            if (globalActivities.length || globalCoughs.length) {
+                if (currentTab === 'full') drawTimelineChart(null);
+                else if (currentTab === 'daily') drawTimelineChart(document.getElementById('daySelector').value);
+                else drawAverageChart();
+            }
         }
 
-        function drawTimelineChart(specificDate) {
+        function drawTimelineChart(date) {
             const ctx = document.getElementById('clinicianChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-
+            const maxF = globalCoughs.length ? Math.max(...globalCoughs.map(c => c.y)) : 10;
             const annotations = {};
-            globalActivities.forEach((act, index) => {
-                annotations[`box${index}`] = {
-                    type: 'box', xMin: act.start, xMax: act.end,
-                    backgroundColor: activityColors[act.type] + '40', // 25% opacity
-                    borderWidth: 0,
-                    label: { display: false, content: act.type, position: 'start', color: activityColors[act.type], font: { size: 10, weight: 'bold' } }
-                };
+            globalActivities.forEach((act, i) => {
+                annotations[`box${i}`] = { type: 'box', xMin: act.start, xMax: act.end, backgroundColor: activityColors[act.type] + '40', borderWidth: 0 };
             });
-
-            let options = {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: { unit: 'hour', displayFormats: { hour: 'MMM d, h a' } },
-                        title: { display: true, text: 'Timeline' }
-                    },
-                    y: { min: 0, title: { display: true, text: 'Cough Intensity' } }
-                },
-                plugins: {
-                    annotation: { annotations: annotations },
-                    legend: { display: false },
-                    zoom: {
-                        pan: { enabled: true, mode: 'x' },
-                        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
-                    }
-                }
-            };
-
-            // If a specific date is selected, lock the X-axis to that 24 hour period
-            if (specificDate) {
-                options.scales.x.min = new Date(specificDate + 'T00:00:00');
-                options.scales.x.max = new Date(specificDate + 'T23:59:59');
-            }
-
             chartInstance = new Chart(ctx, {
                 type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Cough Event', data: globalCoughs,
-                        backgroundColor: '#0f172a', pointRadius: 4, pointHoverRadius: 6
-                    }]
-                },
-                options: options
+                data: { datasets: [{ label: 'Cough', data: globalCoughs, backgroundColor: '#0f172a' }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { type: 'time', time: { unit: 'hour' }, min: date ? new Date(date + 'T00:00:00').getTime() : null, max: date ? new Date(date + 'T23:59:59').getTime() : null },
+                        y: { min: 0, max: maxF * 1.2 }
+                    },
+                    plugins: { annotation: { annotations }, zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: true }, mode: 'x' } } }
+                }
             });
         }
 
         function drawAverageChart() {
             const ctx = document.getElementById('clinicianChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-
-            // Calculate total coughs per hour (0-23)
-            let hourlyCounts = new Array(24).fill(0);
-            globalCoughs.forEach(cough => {
-                const hour = cough.x.getHours();
-                hourlyCounts[hour]++;
-            });
-
-            // Divide by number of unique days to get the average
-            const numDays = uniqueDays.length || 1;
-            const hourlyAverages = hourlyCounts.map(count => (count / numDays).toFixed(2));
-
-            const labels = Array.from({length: 24}, (_, i) => {
-                if (i === 0) return '12 AM';
-                if (i === 12) return '12 PM';
-                return i > 12 ? `${i-12} PM` : `${i} AM`;
-            });
-
+            let counts = new Array(24).fill(0);
+            globalCoughs.forEach(c => counts[new Date(c.x).getHours()]++);
             chartInstance = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Avg Coughs per Hour',
-                        data: hourlyAverages,
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { title: { display: true, text: 'Hour of the Day' } },
-                        y: { title: { display: true, text: 'Average Number of Coughs' }, beginAtZero: true }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        zoom: { pan: { enabled: false }, zoom: { enabled: false } } // Disable zoom for simple bar chart
-                    }
-                }
+                data: { labels: Array.from({length: 24}, (_, i) => i + ':00'), datasets: [{ data: counts.map(c => (c / (uniqueDays.length || 1)).toFixed(2)), backgroundColor: '#3b82f6' }] },
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        function resetZoom() { if (chartInstance && currentTab !== 'average') chartInstance.resetZoom(); }
-
-        // Generator matches the new ISO standard format expected by the parser
-        function generateFakeBeltData() {
-            let csv = "Timestamp,Intensity\n";
-            let baseTime = new Date();
-            baseTime.setHours(8, 0, 0, 0); 
-            for(let i=0; i<30; i++) {
-                let time = new Date(baseTime.getTime() + Math.random() * 24 * 60 * 60 * 1000); // Spread over 24 hrs
-                let intensity = (Math.random() * 8 + 2).toFixed(1); 
-                csv += `${time.toISOString().split('.')[0]},${intensity}\n`; // Removes milliseconds for cleaner CSV
-            }
-            const link = document.createElement("a");
-            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            link.download = `Sample_ESP32_Belt_Data.csv`;
-            link.click();
-        }
+        function resetZoom() { if (chartInstance) chartInstance.resetZoom(); }
     </script>
 </body>
 </html>
