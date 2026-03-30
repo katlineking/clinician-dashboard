@@ -150,11 +150,26 @@
                 }
             });
 
-            // 2. Parse Coughs
+            // 2. Parse Coughs (UPDATED FOR 4-COLUMN FORMAT)
             globalCoughs = [];
             beltText.trim().split('\n').slice(1).forEach(line => {
                 const cols = line.split(',');
-                if (cols.length === 2) {
+                
+                // Check if it's the new 4-column clinical format
+                if (cols.length >= 4) {
+                    const classification = cols[3].trim();
+                    
+                    // Filter out movement artifacts, only plot real coughs
+                    if (classification === 'Cough') {
+                        const dateObj = new Date(cols[0]);
+                        // Hardware timestamp uses a space instead of 'T'
+                        daysSet.add(cols[0].split(' ')[0]); 
+                        // Peak force is in column index 2
+                        globalCoughs.push({ x: dateObj, y: parseFloat(cols[2]) }); 
+                    }
+                } 
+                // Fallback just in case someone uses the old 2-column sample data
+                else if (cols.length === 2) {
                     const dateObj = new Date(cols[0]);
                     daysSet.add(cols[0].split('T')[0]);
                     globalCoughs.push({ x: dateObj, y: parseFloat(cols[1]) });
