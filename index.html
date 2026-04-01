@@ -30,7 +30,13 @@
                 <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Cough Quantifying Solutions</p>
             </div>
         </div>
-        <div class="text-sm text-slate-400 text-right">FD Belt review interface</div>
+        <div class="flex items-center gap-3">
+            <button onclick="openClinicianGuide()"
+                class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10">
+                Guide
+            </button>
+            <div class="text-sm text-slate-400 text-right">FD Band review interface</div>
+        </div>
     </nav>
 
     <main class="flex-grow p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -46,12 +52,14 @@
                         <i data-lucide="workflow" size="18"></i>
                         Review Setup
                     </h2>
-                    <p class="text-sm text-slate-500 mt-1">Select a patient record, import FD Belt data, and open the ReSpire clinical review view.</p>
+                    <p class="text-sm text-slate-500 mt-1">Select a patient record, import FD Band data, and open the
+                        ReSpire clinical review view.</p>
                 </div>
 
                 <!-- Patient selection -->
                 <div class="space-y-2">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Patient Record</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Patient
+                        Record</label>
                     <select id="patientSelector"
                         class="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer font-medium">
                         <option value="" disabled selected>Loading patient records...</option>
@@ -61,27 +69,43 @@
                 <!-- Data source -->
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">FD Belt Data Import</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">FD Band Data
+                            Import</label>
                         <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                             <div class="w-full">
                                 <button id="connectBtn" onclick="connectDevice()"
                                     class="w-full bg-emerald-100 text-emerald-700 font-bold py-3 rounded-xl text-sm hover:bg-emerald-200 transition border border-emerald-200 flex justify-center items-center gap-2">
                                     <i data-lucide="plug" size="16"></i>
-                                    Connect FD Belt
+                                    Connect FD Band
                                 </button>
                                 <button id="pullDataBtn" onclick="pullDataFromDevice()"
                                     class="hidden w-full mt-2 bg-slate-900 text-white font-bold py-3 rounded-xl text-sm hover:bg-slate-800 transition flex justify-center items-center gap-2">
                                     <i data-lucide="download" size="16"></i>
-                                    Import From FD Belt
+                                    Import From FD Band
+                                </button>
+                                <button id="monitorToggleBtn" onclick="toggleMonitoring()"
+                                    class="hidden w-full mt-2 bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm hover:bg-slate-300 transition">
+                                    Pause FD Band
                                 </button>
                             </div>
 
-                            <div class="text-[11px] text-center text-slate-400 font-bold uppercase tracking-widest">or upload fd belt csv</div>
+                            <div class="text-[11px] text-center text-slate-400 font-bold uppercase tracking-widest">or
+                                upload FD Band csv</div>
 
                             <input type="file" id="beltFile" accept=".csv"
                                 class="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-slate-200 file:text-slate-700 cursor-pointer" />
 
                             <!-- Raw data preview is hidden inside a collapsible section to reduce clutter -->
+                            <div class="pt-1 text-center">
+                                <button id="downloadRawCsvBtn" onclick="downloadRawBeltCSV()"
+                                    class="hidden text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2 transition">
+                                    download raw FD Band CSV
+                                </button>
+                                <button id="clearStoredLogBtn" onclick="clearStoredBeltLog()"
+                                    class="hidden ml-3 text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2 transition">
+                                    clear stored FD Band log
+                                </button>
+                            </div>
 
                         </div>
                     </div>
@@ -104,18 +128,22 @@
                         <i data-lucide="sliders-horizontal" size="18"></i>
                         Display Controls
                     </h2>
-                    <p class="text-sm text-slate-500 mt-1">Adjust the review display without changing the source data.</p>
+                    <p class="text-sm text-slate-500 mt-1">Adjust the review display without changing the source data.
+                    </p>
                 </div>
 
                 <div class="space-y-2">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">High Cough Burden Threshold</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">High Cough Burden
+                        Threshold</label>
                     <input id="highlightThreshold" type="number" min="1" value="5" onchange="renderCurrentView()"
                         class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500" />
-                    <p class="text-xs text-slate-400">Time intervals at or above this count are highlighted as elevated cough burden.</p>
+                    <p class="text-xs text-slate-400">Time intervals at or above this count are highlighted as elevated
+                        cough burden.</p>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Context Filter</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Context
+                        Filter</label>
                     <div id="activityFilterContainer" class="space-y-2"></div>
                 </div>
 
@@ -170,7 +198,8 @@
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                     <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Detected Cough Events</div>
                     <div id="summaryTotalCoughs" class="text-3xl font-bold text-slate-900 mt-2">--</div>
-                    <div class="text-sm text-slate-500 mt-1">Total detected cough events within the current review window</div>
+                    <div class="text-sm text-slate-500 mt-1">Total detected cough events within the current review
+                        window</div>
                 </div>
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                     <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Peak Cough Burden Interval
@@ -179,9 +208,11 @@
                     <div id="summaryPeakValue" class="text-sm text-slate-500 mt-1">--</div>
                 </div>
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Days With Monitoring Data</div>
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Days With Monitoring Data
+                    </div>
                     <div id="summaryActiveDays" class="text-3xl font-bold text-slate-900 mt-2">--</div>
-                    <div class="text-sm text-slate-500 mt-1">Distinct calendar days represented in the imported monitoring data
+                    <div class="text-sm text-slate-500 mt-1">Distinct calendar days represented in the imported
+                        monitoring data
                     </div>
                 </div>
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -200,7 +231,8 @@
                     <div id="comparisonSelectedTotal" class="text-sm text-slate-500 mt-1">--</div>
                 </div>
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Average Daily Cough Count</div>
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Average Daily Cough Count
+                    </div>
                     <div id="comparisonAverageTotal" class="text-xl font-bold text-slate-900 mt-2">--</div>
                     <div class="text-sm text-slate-500 mt-1">Mean detected cough count across all monitored days</div>
                 </div>
@@ -231,7 +263,8 @@
                 <div class="flex justify-between items-center mb-4 min-h-[40px] gap-4 flex-wrap">
                     <div>
                         <h2 id="chartTitle" class="font-bold text-lg text-slate-800">Daily Review Timeline</h2>
-                        <p id="chartSubtitle" class="text-sm text-slate-500 mt-1">Review detected cough counts with contextual activity overlays.</p>
+                        <p id="chartSubtitle" class="text-sm text-slate-500 mt-1">Review detected cough counts with
+                            contextual activity overlays.</p>
                     </div>
 
                     <div class="flex gap-3 items-center flex-wrap">
@@ -273,10 +306,78 @@
                     <canvas id="clinicianChart"></canvas>
                 </div>
                 <p id="chartHelper"
-                    class="text-center text-[10px] uppercase tracking-wider text-slate-400 mt-4 font-bold">Scroll to zoom. Click and drag to pan across time.</p>
+                    class="text-center text-[10px] uppercase tracking-wider text-slate-400 mt-4 font-bold">Scroll to
+                    zoom. Click and drag to pan across time.</p>
             </div>
         </section>
     </main>
+
+    <div id="clinicianGuideModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 backdrop-blur-sm p-4 md:p-8">
+        <div class="mx-auto max-w-4xl rounded-[2rem] bg-white shadow-2xl border border-slate-200 overflow-hidden my-4">
+            <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-200 bg-slate-50">
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-[0.2em] text-sky-700">Clinician Handout</div>
+                    <h2 class="mt-1 text-2xl font-bold text-slate-900">Using the ReSpire FD Band Review Interface</h2>
+                    <p class="mt-2 text-sm text-slate-600">Quick instructions for connecting the FD Band, importing device data, and reviewing cough events.</p>
+                </div>
+                <button onclick="closeClinicianGuide()"
+                    class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
+                    Close
+                </button>
+            </div>
+
+            <div class="grid gap-6 px-6 py-6 md:grid-cols-2">
+                <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <h3 class="text-base font-bold text-slate-900">Before You Begin</h3>
+                    <ul class="mt-3 space-y-2 text-sm text-slate-700">
+                        <li>Use Google Chrome or Microsoft Edge.</li>
+                        <li>Close Arduino Serial Monitor, Serial Plotter, and any other program using the FD Band COM port.</li>
+                        <li>Connect the FD Band to the computer with the USB cable.</li>
+                        <li>Select the correct patient record before starting the review.</li>
+                    </ul>
+                </section>
+
+                <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <h3 class="text-base font-bold text-slate-900">Connect the FD Band</h3>
+                    <ol class="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
+                        <li>Click <span class="font-semibold">Connect FD Band</span>.</li>
+                        <li>Choose the FD Band serial device when the browser asks for permission.</li>
+                        <li>Wait for the button to change to <span class="font-semibold">FD Band Connected</span>.</li>
+                        <li>The website will sync the device clock automatically after connection.</li>
+                    </ol>
+                </section>
+
+                <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <h3 class="text-base font-bold text-slate-900">Import and Review Data</h3>
+                    <ol class="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
+                        <li>Click <span class="font-semibold">Import From FD Band</span>.</li>
+                        <li>Wait for the confirmation message that device data was imported successfully.</li>
+                        <li>Click <span class="font-semibold">Open Clinical Review</span>.</li>
+                        <li>Use the day selector, timeline controls, and tabs to review cough events and context data.</li>
+                    </ol>
+                </section>
+
+                <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <h3 class="text-base font-bold text-slate-900">Helpful Device Controls</h3>
+                    <ul class="mt-3 space-y-2 text-sm text-slate-700">
+                        <li><span class="font-semibold">Pause FD Band</span> temporarily stops sensing and logging.</li>
+                        <li><span class="font-semibold">Resume FD Band</span> restarts sensing and logging.</li>
+                        <li><span class="font-semibold">clear stored FD Band log</span> erases the stored device log and recreates an empty CSV.</li>
+                        <li><span class="font-semibold">download raw FD Band CSV</span> saves the imported raw device data for troubleshooting.</li>
+                    </ul>
+                </section>
+
+                <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 md:col-span-2">
+                    <h3 class="text-base font-bold text-amber-900">Important Notes</h3>
+                    <ul class="mt-3 space-y-2 text-sm text-amber-900">
+                        <li>For accurate timestamps, connect the FD Band to the website before collecting a monitoring session.</li>
+                        <li>If no coughs appear, import device data again and make sure the review is opened afterward.</li>
+                        <li>If needed, clear the stored FD Band log before a new test session to avoid mixing old and new entries.</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </div>
 
     <script>
         /* =========================================================
@@ -294,6 +395,7 @@
             currentTab: 'daily',
             serialPort: null,
             usbBeltData: '',
+            monitoringEnabled: true,
 
             // Imported / processed data
             activities: [],
@@ -352,6 +454,14 @@
             document.getElementById('statusBanner').classList.add('hidden');
         }
 
+        function openClinicianGuide() {
+            document.getElementById('clinicianGuideModal').classList.remove('hidden');
+        }
+
+        function closeClinicianGuide() {
+            document.getElementById('clinicianGuideModal').classList.add('hidden');
+        }
+
         function formatTimeRange(startMs, endMs) {
             const format = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             return `${format(new Date(startMs))} – ${format(new Date(endMs))}`;
@@ -365,6 +475,174 @@
             link.download = filename;
             link.click();
             URL.revokeObjectURL(url);
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function syncDeviceClock() {
+            if (!appState.serialPort?.writable) return false;
+
+            const encoder = new TextEncoder();
+            const writer = appState.serialPort.writable.getWriter();
+
+            try {
+                await writer.write(encoder.encode(`SET_TIME_MS:${Date.now()}\n`));
+                return true;
+            } finally {
+                writer.releaseLock();
+            }
+        }
+
+        function toLocalDayKey(timestampMs) {
+            const d = new Date(timestampMs);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function updateRawDownloadVisibility() {
+            const downloadBtn = document.getElementById('downloadRawCsvBtn');
+            const clearBtn = document.getElementById('clearStoredLogBtn');
+            const monitorBtn = document.getElementById('monitorToggleBtn');
+            if (downloadBtn) {
+                downloadBtn.classList.toggle('hidden', appState.usbBeltData === '');
+            }
+            if (clearBtn) {
+                clearBtn.classList.toggle('hidden', !appState.serialPort);
+            }
+            if (monitorBtn) {
+                monitorBtn.classList.toggle('hidden', !appState.serialPort);
+                monitorBtn.textContent = appState.monitoringEnabled ? 'Pause FD Band' : 'Resume FD Band';
+            }
+        }
+
+        function downloadRawBeltCSV() {
+            if (!appState.usbBeltData) {
+                setStatus('Import FD Band data before downloading the raw CSV.', 'error');
+                return;
+            }
+            downloadTextFile('fd-belt-raw.csv', appState.usbBeltData);
+        }
+
+        async function clearStoredBeltLog() {
+            if (!appState.serialPort) {
+                setStatus('Connect the FD Band before clearing the stored log.', 'error');
+                return;
+            }
+
+            const confirmed = window.confirm('Clear the stored FD Band cough log from device memory?');
+            if (!confirmed) return;
+
+            try {
+                const encoder = new TextEncoder();
+                const writer = appState.serialPort.writable.getWriter();
+                try {
+                    await writer.write(encoder.encode('CLEAR_LOG\n'));
+                } finally {
+                    writer.releaseLock();
+                }
+
+                const decoder = new TextDecoder();
+                const reader = appState.serialPort.readable.getReader();
+                let response = '';
+
+                try {
+                    const readResult = await Promise.race([
+                        reader.read(),
+                        delay(3000).then(() => ({ timeout: true }))
+                    ]);
+
+                    if (readResult.timeout) {
+                        throw new Error('Timed out waiting for clear-log confirmation.');
+                    }
+
+                    const { value, done } = readResult;
+                    if (!done && value) {
+                        response = decoder.decode(value, { stream: false });
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+
+                if (response.includes('CLEAR_LOG_OK')) {
+                    appState.usbBeltData = '';
+                    updateRawDownloadVisibility();
+                    setStatus('Stored FD Band cough log cleared successfully.', 'success');
+                    return;
+                }
+
+                throw new Error(`Unexpected device response: ${response.trim() || '[empty]'}`);
+            } catch (error) {
+                console.error(error);
+                const detail = error && error.message ? ` Details: ${error.message}` : '';
+                setStatus(`Unable to clear the stored FD Band log.${detail}`, 'error');
+            }
+        }
+
+        async function toggleMonitoring() {
+            if (!appState.serialPort) {
+                setStatus('Connect the FD Band before changing monitoring state.', 'error');
+                return;
+            }
+
+            const nextCommand = appState.monitoringEnabled ? 'STOP_MONITORING\n' : 'START_MONITORING\n';
+            const expectedResponse = appState.monitoringEnabled ? 'MONITORING_STOPPED' : 'MONITORING_STARTED';
+            console.log('FD Band monitoring toggle requested.', {
+                currentState: appState.monitoringEnabled ? 'running' : 'paused',
+                command: nextCommand.trim(),
+                expectedResponse
+            });
+
+            try {
+                const encoder = new TextEncoder();
+                const writer = appState.serialPort.writable.getWriter();
+                try {
+                    await writer.write(encoder.encode(nextCommand));
+                } finally {
+                    writer.releaseLock();
+                }
+
+                const decoder = new TextDecoder();
+                const reader = appState.serialPort.readable.getReader();
+                let response = '';
+
+                try {
+                    const readResult = await Promise.race([
+                        reader.read(),
+                        delay(3000).then(() => ({ timeout: true }))
+                    ]);
+
+                    if (readResult.timeout) {
+                        throw new Error('Timed out waiting for monitoring state confirmation.');
+                    }
+
+                    const { value, done } = readResult;
+                    if (!done && value) {
+                        response = decoder.decode(value, { stream: false });
+                        console.log('FD Band monitoring toggle raw response:', response);
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+
+                if (!response.includes(expectedResponse)) {
+                    throw new Error(`Unexpected device response: ${response.trim() || '[empty]'}`);
+                }
+
+                appState.monitoringEnabled = !appState.monitoringEnabled;
+                console.log('FD Band monitoring state updated.', {
+                    monitoringEnabled: appState.monitoringEnabled
+                });
+                updateRawDownloadVisibility();
+                setStatus(appState.monitoringEnabled ? 'FD Band monitoring resumed.' : 'FD Band monitoring paused.', 'success');
+            } catch (error) {
+                console.error(error);
+                const detail = error && error.message ? ` Details: ${error.message}` : '';
+                setStatus(`Unable to change FD Band monitoring state.${detail}`, 'error');
+            }
         }
 
         /* =========================================================
@@ -395,26 +673,36 @@
 
         async function connectDevice() {
             try {
+                if (!('serial' in navigator)) {
+                    throw new Error('Web Serial API is not available in this page context.');
+                }
+
                 appState.serialPort = await navigator.serial.requestPort();
                 await appState.serialPort.open({ baudRate: 115200 });
+                await delay(1500);
+                await syncDeviceClock();
+                await delay(200);
 
                 const connectBtn = document.getElementById('connectBtn');
-                connectBtn.innerHTML = `<i data-lucide="check-circle" size="16"></i> FD Belt Connected`;
+                connectBtn.innerHTML = `<i data-lucide="check-circle" size="16"></i> FD Band Connected`;
                 connectBtn.classList.remove('bg-emerald-100', 'text-emerald-700', 'border-emerald-200');
                 connectBtn.classList.add('bg-emerald-500', 'text-white');
 
                 document.getElementById('pullDataBtn').classList.remove('hidden');
-                setStatus('FD Belt connected successfully. You can now import the stored CSV data.', 'success');
+                document.getElementById('monitorToggleBtn').classList.remove('hidden');
+                updateRawDownloadVisibility();
+                setStatus('FD Band connected successfully. You can now import the stored CSV data.', 'success');
                 lucide.createIcons();
             } catch (err) {
                 console.error(err);
-                setStatus('FD Belt connection failed. Use a browser that supports Web Serial, such as Chrome or Edge.', 'error');
+                const detail = err && err.message ? ` Details: ${err.message}` : '';
+                setStatus(`FD Band connection failed.${detail} Use a browser that supports Web Serial, such as Chrome or Edge.`, 'error');
             }
         }
 
         async function pullDataFromDevice() {
             if (!appState.serialPort) {
-                setStatus('Connect the FD Belt before attempting data import.', 'error');
+                setStatus('Connect the FD Band before attempting data import.', 'error');
                 return;
             }
 
@@ -423,19 +711,40 @@
             appState.usbBeltData = '';
 
             try {
+                await syncDeviceClock();
+                await delay(200);
+
                 const encoder = new TextEncoder();
                 const writer = appState.serialPort.writable.getWriter();
-                await writer.write(encoder.encode('SEND_DATA\n'));
-                writer.releaseLock();
+                try {
+                    await writer.write(encoder.encode('SEND_DATA\n'));
+                } finally {
+                    writer.releaseLock();
+                }
 
                 const decoder = new TextDecoder();
                 const reader = appState.serialPort.readable.getReader();
+                const importStart = Date.now();
+                let sawAnyData = false;
 
                 while (true) {
-                    const { value, done } = await reader.read();
+                    const readResult = await Promise.race([
+                        reader.read(),
+                        delay(5000).then(() => ({ timeout: true }))
+                    ]);
+
+                    if (readResult.timeout) {
+                        throw new Error(`Timed out waiting for device response after ${Date.now() - importStart} ms. Received ${appState.usbBeltData.length} characters.`);
+                    }
+
+                    const { value, done } = readResult;
                     if (done) break;
 
-                    appState.usbBeltData += decoder.decode(value, { stream: true });
+                    const chunk = decoder.decode(value, { stream: true });
+                    if (chunk.length > 0) {
+                        sawAnyData = true;
+                        appState.usbBeltData += chunk;
+                    }
 
                     if (appState.usbBeltData.includes('END_OF_FILE')) {
                         appState.usbBeltData = appState.usbBeltData.replace('END_OF_FILE', '');
@@ -449,18 +758,35 @@
 
                 reader.releaseLock();
 
-                document.getElementById('rawDataView').value = appState.usbBeltData || 'No FD Belt data found on the storage card.';
-                document.getElementById('rawDataDetails').open = true;
+                if (!sawAnyData) {
+                    throw new Error('Device returned no serial data.');
+                }
 
-                btn.innerHTML = `<i data-lucide="check" size="14"></i> FD Belt Data Imported`;
+                if (!appState.usbBeltData.includes('Timestamp,')) {
+                    const preview = appState.usbBeltData.slice(0, 120).replace(/\s+/g, ' ');
+                    throw new Error(`Device responded, but no CSV header was found. Preview: ${preview || '[empty]'}`);
+                }
+
+                const rawDataView = document.getElementById('rawDataView');
+                const rawDataDetails = document.getElementById('rawDataDetails');
+                if (rawDataView) {
+                    rawDataView.value = appState.usbBeltData || 'No FD Band data found in device storage.';
+                }
+                if (rawDataDetails) {
+                    rawDataDetails.open = true;
+                }
+                updateRawDownloadVisibility();
+
+                btn.innerHTML = `<i data-lucide="check" size="14"></i> FD Band Data Imported`;
                 btn.classList.remove('bg-slate-900');
                 btn.classList.add('bg-green-600');
-                setStatus('FD Belt data imported successfully.', 'success');
+                setStatus('FD Band data imported successfully.', 'success');
                 lucide.createIcons();
             } catch (error) {
                 console.error(error);
-                btn.innerHTML = `<i data-lucide="download" size="14"></i> Import From FD Belt`;
-                setStatus('FD Belt data import failed. Confirm the device is still connected and transmitting the expected file format.', 'error');
+                btn.innerHTML = `<i data-lucide="download" size="14"></i> Import From FD Band`;
+                const detail = error && error.message ? ` Details: ${error.message}` : '';
+                setStatus(`FD Band data import failed.${detail} Confirm the device is still connected and transmitting the expected file format.`, 'error');
                 lucide.createIcons();
             }
         }
@@ -477,13 +803,13 @@
                 return;
             }
 
-            // Prioritize imported FD Belt data over uploaded file data.
+            // Prioritize imported FD Band data over uploaded file data.
             const beltText = appState.usbBeltData !== ''
                 ? appState.usbBeltData
                 : (beltInput ? await beltInput.text() : null);
 
             if (!beltText) {
-                setStatus('Import data from the FD Belt or upload an FD Belt CSV file before opening the clinical review.', 'error');
+                setStatus('Import data from the FD Band or upload an FD Band CSV file before opening the clinical review.', 'error');
                 return;
             }
 
@@ -507,7 +833,7 @@
                     const endTs = new Date(cleanEnd).getTime();
 
                     typesSet.add(log.type);
-                    daysSet.add(new Date(startTs).toISOString().split('T')[0]);
+                    daysSet.add(toLocalDayKey(startTs));
 
                     return { type: log.type, start: startTs, end: endTs };
                 });
@@ -521,7 +847,7 @@
                         const safeDateStr = cols[0].trim().replace(' ', 'T');
                         const ts = new Date(safeDateStr).getTime();
                         if (!Number.isNaN(ts)) {
-                            daysSet.add(safeDateStr.split('T')[0]);
+                            daysSet.add(toLocalDayKey(ts));
                             appState.coughs.push(ts);
                         }
                     }
@@ -1191,7 +1517,7 @@
             ];
 
             const csvText = summaryRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
-            downloadTextFile('respire_fd_belt_review_summary.csv', csvText);
+            downloadTextFile('respire_fd_band_review_summary.csv', csvText);
             setStatus('Summary CSV exported successfully.', 'success');
         }
 
