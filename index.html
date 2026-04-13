@@ -493,6 +493,52 @@
             }
         }
 
+        async function getDeviceMonitoringState() {
+            if (!appState.serialPort?.readable || !appState.serialPort?.writable) return null;
+
+            const encoder = new TextEncoder();
+            const writer = appState.serialPort.writable.getWriter();
+
+            try {
+                await writer.write(encoder.encode('GET_MONITORING_STATE\n'));
+            } finally {
+                writer.releaseLock();
+            }
+
+            const decoder = new TextDecoder();
+            const reader = appState.serialPort.readable.getReader();
+
+            try {
+                const readResult = await Promise.race([
+                    reader.read(),
+                    delay(3000).then(() => ({ timeout: true }))
+                ]);
+
+                if (readResult.timeout) {
+                    throw new Error('Timed out waiting for monitoring state.');
+                }
+
+                const { value, done } = readResult;
+                const response = !done && value ? decoder.decode(value, { stream: false }) : '';
+                if (response.includes('MONITORING_STATE:RUNNING')) return true;
+                if (response.includes('MONITORING_STATE:PAUSED')) return false;
+                throw new Error(`Unexpected monitoring state response: ${response.trim() || '[empty]'}`);
+            } finally {
+                reader.releaseLock();
+            }
+        }
+
+        async function refreshMonitoringState() {
+            const monitoringEnabled = await getDeviceMonitoringState();
+            if (monitoringEnabled === null) {
+                return null;
+            }
+
+            appState.monitoringEnabled = monitoringEnabled;
+            updateRawDownloadVisibility();
+            return monitoringEnabled;
+        }
+
         function toLocalDayKey(timestampMs) {
             const d = new Date(timestampMs);
             const year = d.getFullYear();
@@ -586,15 +632,17 @@
                 return;
             }
 
-            const nextCommand = appState.monitoringEnabled ? 'STOP_MONITORING\n' : 'START_MONITORING\n';
-            const expectedResponse = appState.monitoringEnabled ? 'MONITORING_STOPPED' : 'MONITORING_STARTED';
-            console.log('FD Band monitoring toggle requested.', {
-                currentState: appState.monitoringEnabled ? 'running' : 'paused',
-                command: nextCommand.trim(),
-                expectedResponse
-            });
-
             try {
+                const currentDeviceState = await refreshMonitoringState();
+                const monitoringEnabled = currentDeviceState === null ? appState.monitoringEnabled : currentDeviceState;
+                const nextCommand = monitoringEnabled ? 'STOP_MONITORING\n' : 'START_MONITORING\n';
+                const expectedResponse = monitoringEnabled ? 'MONITORING_STOPPED' : 'MONITORING_STARTED';
+                console.log('FD Band monitoring toggle requested.', {
+                    currentState: monitoringEnabled ? 'running' : 'paused',
+                    command: nextCommand.trim(),
+                    expectedResponse
+                });
+
                 const encoder = new TextEncoder();
                 const writer = appState.serialPort.writable.getWriter();
                 try {
@@ -630,7 +678,7 @@
                     throw new Error(`Unexpected device response: ${response.trim() || '[empty]'}`);
                 }
 
-                appState.monitoringEnabled = !appState.monitoringEnabled;
+                appState.monitoringEnabled = !monitoringEnabled;
                 console.log('FD Band monitoring state updated.', {
                     monitoringEnabled: appState.monitoringEnabled
                 });
@@ -680,6 +728,7 @@
                 await delay(1500);
                 await syncDeviceClock();
                 await delay(200);
+                await refreshMonitoringState();
 
                 const connectBtn = document.getElementById('connectBtn');
                 connectBtn.innerHTML = `<i data-lucide="check-circle" size="16"></i> FD Band Connected`;
