@@ -516,6 +516,10 @@
             }
         }
 
+        async function flushSerialInput(timeoutMs = 1200) {
+            await readSerialResponseUntil([], timeoutMs);
+        }
+
         async function syncDeviceClock() {
             if (!appState.serialPort?.writable) return false;
 
@@ -533,19 +537,35 @@
         async function getDeviceMonitoringState() {
             if (!appState.serialPort?.readable || !appState.serialPort?.writable) return null;
 
-            const encoder = new TextEncoder();
-            const writer = appState.serialPort.writable.getWriter();
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const encoder = new TextEncoder();
+                const writer = appState.serialPort.writable.getWriter();
 
-            try {
-                await writer.write(encoder.encode('GET_MONITORING_STATE\n'));
-            } finally {
-                writer.releaseLock();
+                try {
+                    await writer.write(encoder.encode('GET_MONITORING_STATE\n'));
+                } finally {
+                    writer.releaseLock();
+                }
+
+                const response = await readSerialResponseUntil(['MONITORING_STATE:RUNNING', 'MONITORING_STATE:PAUSED'], 3000);
+                if (response.includes('MONITORING_STATE:RUNNING')) return true;
+                if (response.includes('MONITORING_STATE:PAUSED')) return false;
+
+                const normalizedResponse = response.trim();
+                const looksLikeBootNoise =
+                    normalizedResponse.includes('ESP-ROM:') ||
+                    normalizedResponse.includes('rst:') ||
+                    normalizedResponse.includes('boot:');
+
+                if (!looksLikeBootNoise || attempt === 2) {
+                    throw new Error(`Unexpected monitoring state response: ${normalizedResponse || '[empty]'}`);
+                }
+
+                await delay(1200);
+                await flushSerialInput(400);
             }
 
-            const response = await readSerialResponseUntil(['MONITORING_STATE:RUNNING', 'MONITORING_STATE:PAUSED'], 3000);
-            if (response.includes('MONITORING_STATE:RUNNING')) return true;
-            if (response.includes('MONITORING_STATE:PAUSED')) return false;
-            throw new Error(`Unexpected monitoring state response: ${response.trim() || '[empty]'}`);
+            throw new Error('Timed out waiting for monitoring state.');
         }
 
         async function refreshMonitoringState() {
@@ -711,6 +731,7 @@
                     await appState.serialPort.open({ baudRate: 115200 });
                 }
                 await delay(1500);
+                await flushSerialInput(800);
                 await syncDeviceClock();
                 await delay(200);
                 await refreshMonitoringState();
