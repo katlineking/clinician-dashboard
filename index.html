@@ -479,6 +479,43 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
+        async function readSerialResponseUntil(markers, timeoutMs = 3000) {
+            if (!appState.serialPort?.readable) return '';
+
+            const decoder = new TextDecoder();
+            const reader = appState.serialPort.readable.getReader();
+            let response = '';
+            const start = Date.now();
+
+            try {
+                while (Date.now() - start < timeoutMs) {
+                    const remainingMs = Math.max(0, timeoutMs - (Date.now() - start));
+                    const readResult = await Promise.race([
+                        reader.read(),
+                        delay(remainingMs).then(() => ({ timeout: true }))
+                    ]);
+
+                    if (readResult.timeout) {
+                        break;
+                    }
+
+                    const { value, done } = readResult;
+                    if (done) break;
+
+                    if (value) {
+                        response += decoder.decode(value, { stream: true });
+                        if (markers.some(marker => response.includes(marker))) {
+                            break;
+                        }
+                    }
+                }
+
+                return response;
+            } finally {
+                reader.releaseLock();
+            }
+        }
+
         async function syncDeviceClock() {
             if (!appState.serialPort?.writable) return false;
 
@@ -505,27 +542,10 @@
                 writer.releaseLock();
             }
 
-            const decoder = new TextDecoder();
-            const reader = appState.serialPort.readable.getReader();
-
-            try {
-                const readResult = await Promise.race([
-                    reader.read(),
-                    delay(3000).then(() => ({ timeout: true }))
-                ]);
-
-                if (readResult.timeout) {
-                    throw new Error('Timed out waiting for monitoring state.');
-                }
-
-                const { value, done } = readResult;
-                const response = !done && value ? decoder.decode(value, { stream: false }) : '';
-                if (response.includes('MONITORING_STATE:RUNNING')) return true;
-                if (response.includes('MONITORING_STATE:PAUSED')) return false;
-                throw new Error(`Unexpected monitoring state response: ${response.trim() || '[empty]'}`);
-            } finally {
-                reader.releaseLock();
-            }
+            const response = await readSerialResponseUntil(['MONITORING_STATE:RUNNING', 'MONITORING_STATE:PAUSED'], 3000);
+            if (response.includes('MONITORING_STATE:RUNNING')) return true;
+            if (response.includes('MONITORING_STATE:PAUSED')) return false;
+            throw new Error(`Unexpected monitoring state response: ${response.trim() || '[empty]'}`);
         }
 
         async function refreshMonitoringState() {
@@ -589,27 +609,7 @@
                     writer.releaseLock();
                 }
 
-                const decoder = new TextDecoder();
-                const reader = appState.serialPort.readable.getReader();
-                let response = '';
-
-                try {
-                    const readResult = await Promise.race([
-                        reader.read(),
-                        delay(3000).then(() => ({ timeout: true }))
-                    ]);
-
-                    if (readResult.timeout) {
-                        throw new Error('Timed out waiting for clear-log confirmation.');
-                    }
-
-                    const { value, done } = readResult;
-                    if (!done && value) {
-                        response = decoder.decode(value, { stream: false });
-                    }
-                } finally {
-                    reader.releaseLock();
-                }
+                const response = await readSerialResponseUntil(['CLEAR_LOG_OK', 'CLEAR_LOG_FAILED'], 3000);
 
                 if (response.includes('CLEAR_LOG_OK')) {
                     appState.usbBeltData = '';
@@ -651,28 +651,8 @@
                     writer.releaseLock();
                 }
 
-                const decoder = new TextDecoder();
-                const reader = appState.serialPort.readable.getReader();
-                let response = '';
-
-                try {
-                    const readResult = await Promise.race([
-                        reader.read(),
-                        delay(3000).then(() => ({ timeout: true }))
-                    ]);
-
-                    if (readResult.timeout) {
-                        throw new Error('Timed out waiting for monitoring state confirmation.');
-                    }
-
-                    const { value, done } = readResult;
-                    if (!done && value) {
-                        response = decoder.decode(value, { stream: false });
-                        console.log('FD Band monitoring toggle raw response:', response);
-                    }
-                } finally {
-                    reader.releaseLock();
-                }
+                const response = await readSerialResponseUntil(['MONITORING_STARTED', 'MONITORING_STOPPED'], 3000);
+                console.log('FD Band monitoring toggle raw response:', response);
 
                 if (!response.includes(expectedResponse)) {
                     throw new Error(`Unexpected device response: ${response.trim() || '[empty]'}`);
@@ -723,8 +703,13 @@
                     throw new Error('Web Serial API is not available in this page context.');
                 }
 
-                appState.serialPort = await navigator.serial.requestPort();
-                await appState.serialPort.open({ baudRate: 115200 });
+                if (!appState.serialPort) {
+                    appState.serialPort = await navigator.serial.requestPort();
+                }
+
+                if (!appState.serialPort.readable || !appState.serialPort.writable) {
+                    await appState.serialPort.open({ baudRate: 115200 });
+                }
                 await delay(1500);
                 await syncDeviceClock();
                 await delay(200);
