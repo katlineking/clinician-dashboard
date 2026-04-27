@@ -14,6 +14,34 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <style>
+        .customization-shell {
+            transition: opacity 0.2s ease;
+        }
+
+        .customization-shell[data-collapsed="true"] .customization-content,
+        .customization-shell[data-collapsed="true"] .customization-heading,
+        .customization-shell[data-collapsed="true"] .customization-description {
+            display: none;
+        }
+
+        .customization-shell[data-collapsed="true"] .customization-toggle-label-collapsed {
+            display: inline;
+        }
+
+        .customization-shell[data-collapsed="true"] .customization-toggle-label-expanded {
+            display: none;
+        }
+
+        .customization-shell[data-collapsed="false"] .customization-toggle-label-collapsed {
+            display: none;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.8;
+        }
+    </style>
 </head>
 
 <body class="bg-slate-50 font-sans text-slate-900 min-h-screen flex flex-col">
@@ -28,218 +56,77 @@
                 <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Cough Quantifying Solutions</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
-            <button onclick="openClinicianGuide()"
-                class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10">
-                Guide
-            </button>
-            <div class="text-sm text-slate-400 text-right">FD Band review interface</div>
-        </div>
+        <div class="text-sm text-slate-400 text-right">FD Band review interface</div>
     </nav>
 
-    <main class="flex-grow p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <!-- =====================================================
-             LEFT SIDEBAR
-             Cleaned up into simpler sections with clearer hierarchy.
-             ===================================================== -->
-        <aside class="lg:col-span-1 space-y-6">
+    <main class="flex-grow p-6 max-w-[96rem] mx-auto w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-6 items-start">
+        <section class="space-y-6 min-w-0">
             <!-- Workflow card -->
-            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
-                <div>
-                    <h2 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
-                        <i data-lucide="workflow" size="18"></i>
-                        Review Setup
-                    </h2>
-                    <p class="text-sm text-slate-500 mt-1">Select a patient record, import FD Band data, and open the
-                        ReSpire clinical review view.</p>
+            <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 max-w-3xl">
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="w-full sm:w-auto sm:min-w-[17rem] space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Patient Record</label>
+                        <select id="patientSelector"
+                            class="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer font-medium">
+                            <option value="" disabled selected>Loading patient records...</option>
+                        </select>
+                    </div>
+
+                    <button id="importPanelToggleBtn" type="button" onclick="toggleImportPanel()"
+                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition flex items-center gap-2">
+                        <i data-lucide="folder-input" size="16"></i>
+                        Data Import
+                        <span id="importPanelToggleText" class="text-[11px] uppercase tracking-wider text-slate-400">Show</span>
+                    </button>
+
+                    <button id="generateBtn" onclick="processData()"
+                        class="rounded-xl bg-slate-900 text-white font-bold px-4 py-2.5 hover:bg-slate-800 transition shadow-sm flex justify-center items-center text-sm">
+                        Open Clinical Review
+                    </button>
                 </div>
 
-                <!-- Patient selection -->
-                <div class="space-y-2">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Patient
-                        Record</label>
-                    <select id="patientSelector"
-                        class="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer font-medium">
-                        <option value="" disabled selected>Loading patient records...</option>
-                    </select>
-                </div>
+                <div id="importPanel" class="hidden max-w-xl bg-slate-50 border border-slate-200 rounded-2xl p-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <div class="rounded-xl border border-slate-200 bg-white p-2.5 space-y-2">
+                            <div class="text-xs font-bold uppercase tracking-wider text-slate-500">FD Band Direct</div>
+                            <button id="connectBtn" onclick="connectDevice()"
+                                class="w-full bg-emerald-100 text-emerald-700 font-bold py-2.5 rounded-xl text-sm hover:bg-emerald-200 transition border border-emerald-200 flex justify-center items-center gap-2">
+                                <i data-lucide="plug" size="16"></i>
+                                Connect FD Band
+                            </button>
+                            <button id="pullDataBtn" onclick="pullDataFromDevice()"
+                                class="hidden w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-slate-800 transition flex justify-center items-center gap-2">
+                                <i data-lucide="download" size="16"></i>
+                                Import From FD Band
+                            </button>
+                            <button id="monitorToggleBtn" onclick="toggleMonitoring()"
+                                class="hidden w-full bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-sm hover:bg-slate-300 transition">
+                                Pause FD Band
+                            </button>
+                        </div>
 
-                <!-- Data source -->
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">FD Band Data
-                            Import</label>
-                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-                            <div class="w-full">
-                                <button id="connectBtn" onclick="connectDevice()"
-                                    class="w-full bg-emerald-100 text-emerald-700 font-bold py-3 rounded-xl text-sm hover:bg-emerald-200 transition border border-emerald-200 flex justify-center items-center gap-2">
-                                    <i data-lucide="plug" size="16"></i>
-                                    Connect FD Band
-                                </button>
-                                <button id="pullDataBtn" onclick="pullDataFromDevice()"
-                                    class="hidden w-full mt-2 bg-slate-900 text-white font-bold py-3 rounded-xl text-sm hover:bg-slate-800 transition flex justify-center items-center gap-2">
-                                    <i data-lucide="download" size="16"></i>
-                                    Import From FD Band
-                                </button>
-                                <button id="monitorToggleBtn" onclick="toggleMonitoring()"
-                                    class="hidden w-full mt-2 bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm hover:bg-slate-300 transition">
-                                    Pause FD Band
-                                </button>
-                            </div>
-
-                            <div class="text-[11px] text-center text-slate-400 font-bold uppercase tracking-widest">or
-                                upload FD Band csv</div>
-
+                        <div class="rounded-xl border border-slate-200 bg-white p-2.5 space-y-2">
+                            <div class="text-xs font-bold uppercase tracking-wider text-slate-500">CSV Upload</div>
                             <input type="file" id="beltFile" accept=".csv"
                                 class="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-slate-200 file:text-slate-700 cursor-pointer" />
-
-                            <!-- Raw data preview is hidden inside a collapsible section to reduce clutter -->
-                            <div class="pt-1 text-center">
-                                <button id="downloadRawCsvBtn" onclick="downloadRawBeltCSV()"
-                                    class="hidden text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2 transition">
-                                    download raw FD Band CSV
-                                </button>
-                                <button id="clearStoredLogBtn" onclick="clearStoredBeltLog()"
-                                    class="hidden ml-3 text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2 transition">
-                                    clear stored FD Band log
-                                </button>
-                            </div>
-
                         </div>
                     </div>
-                </div>
 
-                <button id="generateBtn" onclick="processData()"
-                    class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-2xl hover:bg-slate-800 transition shadow-md flex justify-center items-center text-sm">
-                    Open Clinical Review
-                </button>
+                    <div class="pt-2 text-center">
+                        <button id="downloadRawCsvBtn" onclick="downloadRawBeltCSV()"
+                            class="hidden text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2 transition">
+                            download raw FD Band CSV
+                        </button>
+                        <button id="clearStoredLogBtn" onclick="clearStoredBeltLog()"
+                            class="hidden ml-3 text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2 transition">
+                            clear stored FD Band log
+                        </button>
+                    </div>
+                </div>
             </section>
 
             <!-- Inline status / error area -->
             <section id="statusBanner" class="hidden rounded-2xl border px-4 py-3 text-sm"></section>
-
-            <!-- Summary controls -->
-            <section id="insightControlsCard"
-                class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hidden space-y-4">
-                <div>
-                    <h2 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
-                        <i data-lucide="sliders-horizontal" size="18"></i>
-                        Display Controls
-                    </h2>
-                    <p class="text-sm text-slate-500 mt-1">Adjust the review display without changing the source data.
-                    </p>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">High Cough Burden
-                        Threshold</label>
-                    <input id="highlightThreshold" type="number" min="1" value="5" onchange="renderCurrentView()"
-                        class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500" />
-                    <p class="text-xs text-slate-400">Time intervals at or above this count are highlighted as elevated
-                        cough burden.</p>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Context
-                        Filter</label>
-                    <div id="activityFilterContainer" class="space-y-2"></div>
-                </div>
-
-                <button onclick="exportSummaryCSV()"
-                    class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 text-sm">
-                    <i data-lucide="file-down" size="16"></i>
-                    Export Review Summary
-                </button>
-            </section>
-
-            <!-- Legend and color controls -->
-            <section id="colorLegendCard" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hidden">
-                <div class="flex justify-between items-center mb-4 border-b pb-2">
-                    <h2 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
-                        <i data-lucide="layers" size="18"></i>
-                        Display Legend
-                    </h2>
-                    <button onclick="resetColors()"
-                        class="text-xs font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1 transition">
-                        <i data-lucide="rotate-ccw" size="14"></i>
-                        Reset
-                    </button>
-                </div>
-
-                <!-- Toggle for showing/hiding cough bars -->
-                <div class="flex items-center justify-between py-2 mb-3 border-b border-slate-200">
-                    <div class="flex items-center gap-2">
-                        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                            <circle cx="6" cy="6" r="5" fill="#0f172a"></circle>
-                        </svg>
-                        <span class="text-sm font-medium text-slate-700">Detected Coughs</span>
-                    </div>
-                    <button id="coughToggleBtn" onclick="toggleCoughEvents()" role="switch" aria-checked="true"
-                        title="Show or hide detected cough bars"
-                        class="relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none bg-slate-900">
-                        <span id="coughToggleKnob"
-                            class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform translate-x-4"></span>
-                    </button>
-                </div>
-
-                <div id="legendContainer" class="space-y-3"></div>
-            </section>
-        </aside>
-
-        <!-- =====================================================
-             MAIN CONTENT AREA
-             Includes summary cards above the chart.
-             ===================================================== -->
-        <section class="lg:col-span-3 space-y-6">
-            <!-- Summary cards -->
-            <div id="summaryGrid" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Detected Cough Events</div>
-                    <div id="summaryTotalCoughs" class="text-3xl font-bold text-slate-900 mt-2">--</div>
-                    <div class="text-sm text-slate-500 mt-1">Total detected cough events within the current review
-                        window</div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Peak Cough Burden Interval
-                    </div>
-                    <div id="summaryPeakPeriod" class="text-xl font-bold text-slate-900 mt-2">--</div>
-                    <div id="summaryPeakValue" class="text-sm text-slate-500 mt-1">--</div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Days With Monitoring Data
-                    </div>
-                    <div id="summaryActiveDays" class="text-3xl font-bold text-slate-900 mt-2">--</div>
-                    <div class="text-sm text-slate-500 mt-1">Distinct calendar days represented in the imported
-                        monitoring data
-                    </div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Context Entries in View
-                    </div>
-                    <div id="summaryActivities" class="text-3xl font-bold text-slate-900 mt-2">--</div>
-                    <div id="summaryRangeText" class="text-sm text-slate-500 mt-1">--</div>
-                </div>
-            </div>
-
-            <!-- Comparison cards -->
-            <div id="comparisonGrid" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Selected Dates</div>
-                    <div id="comparisonSelectedDay" class="text-xl font-bold text-slate-900 mt-2">--</div>
-                    <div id="comparisonSelectedTotal" class="text-sm text-slate-500 mt-1">--</div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Average Daily Cough Count
-                    </div>
-                    <div id="comparisonAverageTotal" class="text-xl font-bold text-slate-900 mt-2">--</div>
-                    <div class="text-sm text-slate-500 mt-1">Mean detected cough count across all monitored days</div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Comparison Summary</div>
-                    <div id="comparisonInsight" class="text-sm font-semibold text-slate-900 mt-2">--</div>
-                    <div id="comparisonPeakHour" class="text-sm text-slate-500 mt-1">--</div>
-                </div>
-            </div>
 
             <!-- Chart card -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
@@ -261,26 +148,25 @@
                 <div class="flex justify-between items-center mb-4 min-h-[40px] gap-4 flex-wrap">
                     <div>
                         <h2 id="chartTitle" class="font-bold text-lg text-slate-800">Daily Review Timeline</h2>
-                        <p id="chartSubtitle" class="text-sm text-slate-500 mt-1">Review detected cough counts with
-                            contextual activity overlays.</p>
+                        <p id="chartSubtitle" class="text-sm text-slate-500 mt-1">Detected cough counts with contextual activity overlays.</p>
                     </div>
 
                     <div class="flex gap-3 items-center flex-wrap">
                         <!-- Daily selector -->
                         <div id="dailyControls" class="flex gap-2 items-center">
                             <label class="text-sm font-bold text-slate-500">Review Date:</label>
-                            <select id="daySelector" onchange="renderCurrentView()"
-                                class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"></select>
+                            <input id="daySelector" type="date" onchange="renderCurrentView()"
+                                class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" />
                         </div>
 
                         <!-- Comparison selectors -->
                         <div id="compareControls" class="hidden flex gap-2 items-center flex-wrap">
                             <label class="text-sm font-bold text-slate-500">Date A:</label>
-                            <select id="compareDayA" onchange="renderCurrentView()"
-                                class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"></select>
+                            <input id="compareDayA" type="date" onchange="renderCurrentView()"
+                                class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" />
                             <label class="text-sm font-bold text-slate-500">Date B:</label>
-                            <select id="compareDayB" onchange="renderCurrentView()"
-                                class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"></select>
+                            <input id="compareDayB" type="date" onchange="renderCurrentView()"
+                                class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" />
                         </div>
 
                         <!-- Bin selector -->
@@ -305,77 +191,132 @@
                 </div>
                 <p id="chartHelper"
                     class="text-center text-[10px] uppercase tracking-wider text-slate-400 mt-4 font-bold">Scroll to
-                    zoom. Click and drag to pan across time.</p>
+                    zoom. Drag to pan.</p>
+            </div>
+
+            <!-- Comparison cards -->
+            <div id="comparisonGrid" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Selected Dates</div>
+                    <div id="comparisonSelectedDay" class="text-xl font-bold text-slate-900 mt-2">--</div>
+                    <div id="comparisonSelectedTotal" class="text-sm text-slate-500 mt-1">--</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Average Daily Cough Count
+                    </div>
+                    <div id="comparisonAverageTotal" class="text-xl font-bold text-slate-900 mt-2">--</div>
+                    <div class="text-sm text-slate-500 mt-1">Across monitored days</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Comparison Summary</div>
+                    <div id="comparisonInsight" class="text-sm font-semibold text-slate-900 mt-2">--</div>
+                    <div id="comparisonPeakHour" class="text-sm text-slate-500 mt-1">--</div>
+                </div>
+            </div>
+
+            <!-- Summary cards -->
+            <div id="summaryGrid" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Detected Cough Events</div>
+                    <div id="summaryTotalCoughs" class="text-3xl font-bold text-slate-900 mt-2">--</div>
+                    <div class="text-sm text-slate-500 mt-1">Current review window</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Peak Cough Burden Interval
+                    </div>
+                    <div id="summaryPeakPeriod" class="text-xl font-bold text-slate-900 mt-2">--</div>
+                    <div id="summaryPeakValue" class="text-sm text-slate-500 mt-1">--</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Days With Monitoring Data
+                    </div>
+                    <div id="summaryActiveDays" class="text-3xl font-bold text-slate-900 mt-2">--</div>
+                    <div class="text-sm text-slate-500 mt-1">Imported monitoring days</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Context Entries in View
+                    </div>
+                    <div id="summaryActivities" class="text-3xl font-bold text-slate-900 mt-2">--</div>
+                    <div id="summaryRangeText" class="text-sm text-slate-500 mt-1">--</div>
+                </div>
             </div>
         </section>
-    </main>
 
-    <div id="clinicianGuideModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 backdrop-blur-sm p-4 md:p-8">
-        <div class="mx-auto max-w-4xl rounded-[2rem] bg-white shadow-2xl border border-slate-200 overflow-hidden my-4">
-            <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-200 bg-slate-50">
-                <div>
-                    <div class="text-xs font-bold uppercase tracking-[0.2em] text-sky-700">Clinician Handout</div>
-                    <h2 class="mt-1 text-2xl font-bold text-slate-900">Using the ReSpire FD Band Review Interface</h2>
-                    <p class="mt-2 text-sm text-slate-600">Quick instructions for connecting the FD Band, importing device data, and reviewing cough events.</p>
+        <!-- =====================================================
+             RIGHT CUSTOMIZATION SIDEBAR
+             Sticky, smaller, and collapsible for faster access.
+             ===================================================== -->
+        <aside id="customizationPanel" data-collapsed="false"
+            class="customization-shell lg:sticky lg:top-6 space-y-6 self-start">
+            <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="customization-heading text-xs font-bold uppercase tracking-[0.22em] text-sky-700">Quick Access</div>
+                        <h2 class="customization-heading text-lg font-bold text-slate-900 mt-1">Display Settings</h2>
+                    </div>
+                    <button id="customizationToggleBtn" onclick="toggleCustomizationPanel()"
+                        class="shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition flex items-center gap-2">
+                        <i id="customizationToggleIcon" data-lucide="panel-right-close" size="16"></i>
+                        <span class="customization-toggle-label-expanded">Hide Options</span>
+                        <span class="customization-toggle-label-collapsed hidden">Show Options</span>
+                    </button>
                 </div>
-                <button onclick="closeClinicianGuide()"
-                    class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
-                    Close
-                </button>
-            </div>
+            </section>
 
-            <div class="grid gap-6 px-6 py-6 md:grid-cols-2">
-                <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <h3 class="text-base font-bold text-slate-900">Before You Begin</h3>
-                    <ul class="mt-3 space-y-2 text-sm text-slate-700">
-                        <li>Use Google Chrome or Microsoft Edge.</li>
-                        <li>Close Arduino Serial Monitor, Serial Plotter, and any other program using the FD Band COM port.</li>
-                        <li>Connect the FD Band to the computer with the USB cable.</li>
-                        <li>Select the correct patient record before starting the review.</li>
-                    </ul>
-                </section>
+            <div class="customization-content space-y-6">
+                <section id="insightControlsCard"
+                    class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div>
+                        <h2 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                            <i data-lucide="sliders-horizontal" size="18"></i>
+                            Display Controls
+                        </h2>
+                    </div>
 
-                <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <h3 class="text-base font-bold text-slate-900">Connect the FD Band</h3>
-                    <ol class="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
-                        <li>Click <span class="font-semibold">Connect FD Band</span>.</li>
-                        <li>Choose the FD Band serial device when the browser asks for permission.</li>
-                        <li>Wait for the button to change to <span class="font-semibold">FD Band Connected</span>.</li>
-                        <li>The website will sync the device clock automatically after connection.</li>
-                    </ol>
-                </section>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">High Cough Burden
+                            Threshold</label>
+                        <input id="highlightThreshold" type="number" min="1" value="5" onchange="renderCurrentView()"
+                            class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
 
-                <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <h3 class="text-base font-bold text-slate-900">Import and Review Data</h3>
-                    <ol class="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
-                        <li>Click <span class="font-semibold">Import From FD Band</span>.</li>
-                        <li>Wait for the confirmation message that device data was imported successfully.</li>
-                        <li>Click <span class="font-semibold">Open Clinical Review</span>.</li>
-                        <li>Use the day selector, timeline controls, and tabs to review cough events and context data.</li>
-                    </ol>
-                </section>
+                    <div class="flex items-center justify-between py-2 border-y border-slate-200">
+                        <div class="flex items-center gap-2">
+                            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                                <circle cx="6" cy="6" r="5" fill="#0f172a"></circle>
+                            </svg>
+                            <span class="text-sm font-medium text-slate-700">Detected Coughs</span>
+                        </div>
+                        <button id="coughToggleBtn" onclick="toggleCoughEvents()" role="switch" aria-checked="true"
+                            title="Show or hide detected cough bars"
+                            class="relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none bg-slate-900">
+                            <span id="coughToggleKnob"
+                                class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform translate-x-4"></span>
+                        </button>
+                    </div>
 
-                <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <h3 class="text-base font-bold text-slate-900">Helpful Device Controls</h3>
-                    <ul class="mt-3 space-y-2 text-sm text-slate-700">
-                        <li><span class="font-semibold">Pause FD Band</span> temporarily stops sensing and logging.</li>
-                        <li><span class="font-semibold">Resume FD Band</span> restarts sensing and logging.</li>
-                        <li><span class="font-semibold">clear stored FD Band log</span> erases the stored device log and recreates an empty CSV.</li>
-                        <li><span class="font-semibold">download raw FD Band CSV</span> saves the imported raw device data for troubleshooting.</li>
-                    </ul>
-                </section>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Context
+                                Filter + Colors</label>
+                            <button onclick="resetColors()"
+                                class="text-xs font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1 transition">
+                                <i data-lucide="rotate-ccw" size="14"></i>
+                                Reset Colors
+                            </button>
+                        </div>
+                        <div id="activityFilterContainer" class="space-y-2"></div>
+                    </div>
 
-                <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 md:col-span-2">
-                    <h3 class="text-base font-bold text-amber-900">Important Notes</h3>
-                    <ul class="mt-3 space-y-2 text-sm text-amber-900">
-                        <li>For accurate timestamps, connect the FD Band to the website before collecting a monitoring session.</li>
-                        <li>If no coughs appear, import device data again and make sure the review is opened afterward.</li>
-                        <li>If needed, clear the stored FD Band log before a new test session to avoid mixing old and new entries.</li>
-                    </ul>
+                    <button onclick="exportSummaryCSV()"
+                        class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 text-sm">
+                        <i data-lucide="file-down" size="16"></i>
+                        Export Review Summary
+                    </button>
                 </section>
             </div>
-        </div>
-    </div>
+        </aside>
+    </main>
 
     <script>
         /* =========================================================
@@ -406,10 +347,18 @@
             activityColors: {},
             showCoughEvents: true,
             customPresets: [],
-            openPickerType: null
+            openPickerType: null,
+            customizationPanelCollapsed: false
         };
 
-        const fallbackColors = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+        const DEFAULT_TRIGGER_COLORS = {
+            'Sleeping': '#3b82f6',
+            'Eating': '#10b981',
+            'Exercise': '#ef4444',
+            'Medication': '#f59e0b',
+            'Lying Flat': '#8b5cf6'
+        };
+        const fallbackColors = Object.values(DEFAULT_TRIGGER_COLORS);
 
         const TAB_TITLES = {
             daily: 'Daily Review Timeline',
@@ -427,6 +376,7 @@
 
         window.onload = function () {
             lucide.createIcons();
+            applyCustomizationPanelState();
             fetchPatientList();
         };
 
@@ -452,17 +402,65 @@
             document.getElementById('statusBanner').classList.add('hidden');
         }
 
-        function openClinicianGuide() {
-            document.getElementById('clinicianGuideModal').classList.remove('hidden');
+        function toggleCustomizationPanel() {
+            appState.customizationPanelCollapsed = !appState.customizationPanelCollapsed;
+            applyCustomizationPanelState();
         }
 
-        function closeClinicianGuide() {
-            document.getElementById('clinicianGuideModal').classList.add('hidden');
+        function applyCustomizationPanelState() {
+            const panel = document.getElementById('customizationPanel');
+            const toggleIcon = document.getElementById('customizationToggleIcon');
+            if (!panel || !toggleIcon) return;
+
+            panel.setAttribute('data-collapsed', String(appState.customizationPanelCollapsed));
+            toggleIcon.setAttribute('data-lucide', appState.customizationPanelCollapsed ? 'panel-right-open' : 'panel-right-close');
+            toggleIcon.innerHTML = '';
+            lucide.createIcons();
         }
 
         function formatTimeRange(startMs, endMs) {
             const format = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             return `${format(new Date(startMs))} – ${format(new Date(endMs))}`;
+        }
+
+        function toggleImportPanel() {
+            const panel = document.getElementById('importPanel');
+            const label = document.getElementById('importPanelToggleText');
+            if (!panel || !label) return;
+
+            const isHidden = panel.classList.toggle('hidden');
+            label.textContent = isHidden ? 'Show' : 'Hide';
+        }
+
+        function hexToRgba(hex, alpha) {
+            const sanitized = hex.replace('#', '');
+            const normalized = sanitized.length === 3
+                ? sanitized.split('').map(char => char + char).join('')
+                : sanitized;
+
+            const red = parseInt(normalized.slice(0, 2), 16);
+            const green = parseInt(normalized.slice(2, 4), 16);
+            const blue = parseInt(normalized.slice(4, 6), 16);
+
+            return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+        }
+
+        function initializeDateInputs() {
+            if (!appState.uniqueDays.length) return;
+
+            const firstDay = appState.uniqueDays[0];
+            const lastDay = appState.uniqueDays[appState.uniqueDays.length - 1];
+            const compareSecondDay = appState.uniqueDays[Math.min(1, appState.uniqueDays.length - 1)];
+
+            ['daySelector', 'compareDayA', 'compareDayB'].forEach(id => {
+                const input = document.getElementById(id);
+                input.min = firstDay;
+                input.max = lastDay;
+            });
+
+            document.getElementById('daySelector').value = firstDay;
+            document.getElementById('compareDayA').value = firstDay;
+            document.getElementById('compareDayB').value = compareSecondDay;
         }
 
         function downloadTextFile(filename, text) {
@@ -909,28 +907,11 @@
                 appState.activityTypes = Array.from(typesSet);
                 appState.visibleActivityTypes = new Set(appState.activityTypes);
                 appState.uniqueDays = Array.from(daysSet).sort();
-
-                document.getElementById('daySelector').innerHTML = appState.uniqueDays.map(day =>
-                    `<option value="${day}">${new Date(day + 'T12:00:00').toLocaleDateString()}</option>`
-                ).join('');
-
-                document.getElementById('compareDayA').innerHTML = appState.uniqueDays.map(day =>
-                    `<option value="${day}">${new Date(day + 'T12:00:00').toLocaleDateString()}</option>`
-                ).join('');
-
-                document.getElementById('compareDayB').innerHTML = appState.uniqueDays.map(day =>
-                    `<option value="${day}">${new Date(day + 'T12:00:00').toLocaleDateString()}</option>`
-                ).join('');
-
-                if (appState.uniqueDays.length > 1) {
-                    document.getElementById('compareDayB').value = appState.uniqueDays[1];
-                }
+                initializeDateInputs();
 
                 resetColors(false);
                 buildActivityFilter();
                 document.getElementById('summaryGrid').classList.remove('hidden');
-                document.getElementById('colorLegendCard').classList.remove('hidden');
-                document.getElementById('insightControlsCard').classList.remove('hidden');
 
                 switchTab('daily');
                 setStatus('Clinical review loaded successfully.', 'success');
@@ -953,6 +934,8 @@
                 return;
             }
 
+            const allPresets = Array.from(new Set([...fallbackColors, ...appState.customPresets]));
+
             container.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
                     <button onclick="setAllActivityFilters(true)" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Show all</button>
@@ -960,12 +943,24 @@
                 </div>
                 ${appState.activityTypes.map(type => {
                 const checked = appState.visibleActivityTypes.has(type) ? 'checked' : '';
+                const pickerOpen = appState.openPickerType === type;
                 return `
-                        <label class="flex items-center gap-3 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer">
-                            <input type="checkbox" ${checked} onchange="toggleActivityFilter('${type.replace(/'/g, "\\'")}')" class="rounded border-slate-300" />
-                            <span class="inline-block w-3 h-3 rounded-full" style="background-color: ${appState.activityColors[type] || '#94a3b8'}"></span>
-                            <span>${type}</span>
-                        </label>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                            <div class="flex items-center gap-3 text-sm text-slate-700">
+                                <input type="checkbox" ${checked} onchange="toggleActivityFilter('${type.replace(/'/g, "\\'")}')" class="rounded border-slate-300" />
+                                <button type="button" onclick="togglePicker('${type.replace(/'/g, "\\'")}')" class="inline-block w-4 h-4 rounded-full border border-slate-300 shadow-sm shrink-0" style="background-color: ${appState.activityColors[type] || '#94a3b8'}"></button>
+                                <span class="flex-1">${type}</span>
+                            </div>
+                            <div id="picker-${type}" class="${pickerOpen ? 'block' : 'hidden'} mt-3 border-t border-slate-200 pt-3">
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    ${allPresets.map(color => `<button type="button" onclick="applyColor('${type.replace(/'/g, "\\'")}', '${color}')" class="w-6 h-6 rounded-full border border-white shadow-sm" style="background-color: ${color}; box-shadow: 0 0 0 1px ${color};"></button>`).join('')}
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <input type="color" id="custom-${type}" class="w-7 h-7" value="${appState.activityColors[type] || '#94a3b8'}" />
+                                    <button type="button" onclick="addPresetAndApply('${type.replace(/'/g, "\\'")}')" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded">Apply</button>
+                                </div>
+                            </div>
+                        </div>
                     `;
             }).join('')}
             `;
@@ -1008,6 +1003,7 @@
             document.getElementById('binControls').classList.toggle('hidden', !isZoomable);
             document.getElementById('resetZoomBtn').classList.toggle('hidden', !isZoomable);
             document.getElementById('chartHelper').classList.toggle('hidden', !isZoomable);
+            document.getElementById('insightControlsCard').classList.remove('hidden');
 
             renderCurrentView();
         }
@@ -1035,48 +1031,23 @@
 
         function resetColors(shouldRender = true) {
             appState.activityColors = {};
-            appState.activityTypes.forEach((type, index) => {
-                appState.activityColors[type] = fallbackColors[index % fallbackColors.length];
+            appState.activityTypes.forEach(type => {
+                appState.activityColors[type] = DEFAULT_TRIGGER_COLORS[type] || '#94a3b8';
             });
             appState.customPresets = [];
             appState.openPickerType = null;
-            buildColorLegend();
             buildActivityFilter();
             if (shouldRender) renderCurrentView();
         }
 
-        function buildColorLegend() {
-            const container = document.getElementById('legendContainer');
-            const allPresets = [...fallbackColors, ...appState.customPresets];
-
-            container.innerHTML = Object.keys(appState.activityColors).map(type => `
-                <div class="flex flex-col border-b border-slate-100 last:border-0 pb-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-medium text-slate-700">${type}</span>
-                        <button onclick="togglePicker('${type.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded shadow-sm border border-slate-300 transition" style="background-color: ${appState.activityColors[type]}40; border-color: ${appState.activityColors[type]}"></button>
-                    </div>
-                    <div id="picker-${type}" class="${appState.openPickerType === type ? 'block' : 'hidden'} mt-3 p-3 bg-white border border-slate-200 shadow-md rounded-xl">
-                        <div class="flex flex-wrap gap-2 mb-3">
-                            ${allPresets.map(color => `<button onclick="applyColor('${type.replace(/'/g, "\\'")}', '${color}')" class="w-6 h-6 rounded-full" style="background-color: ${color}"></button>`).join('')}
-                        </div>
-                        <div class="flex items-center justify-between border-t pt-3">
-                            <input type="color" id="custom-${type}" class="w-6 h-6" />
-                            <button onclick="addPresetAndApply('${type.replace(/'/g, "\\'")}')" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded">Apply</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
         function togglePicker(type) {
             appState.openPickerType = appState.openPickerType === type ? null : type;
-            buildColorLegend();
+            buildActivityFilter();
         }
 
         function applyColor(type, color) {
             appState.activityColors[type] = color;
             appState.openPickerType = null;
-            buildColorLegend();
             buildActivityFilter();
             renderCurrentView();
         }
@@ -1397,7 +1368,7 @@
                     datasets: [{
                         label: 'Average Coughs per Hour',
                         data: means,
-                        backgroundColor: '#3b82f6',
+                        backgroundColor: '#1d4ed8',
                         borderRadius: 3,
                         errorBars: standardDeviations
                     }]
@@ -1495,6 +1466,8 @@
                             label: new Date(dayA + 'T12:00:00').toLocaleDateString(),
                             data: binnedA.counts,
                             tension: 0.25,
+                            borderColor: '#1d4ed8',
+                            backgroundColor: '#1d4ed8',
                             borderWidth: 2,
                             pointRadius: 3,
                             fill: false
@@ -1503,6 +1476,8 @@
                             label: new Date(dayB + 'T12:00:00').toLocaleDateString(),
                             data: binnedB.counts,
                             tension: 0.25,
+                            borderColor: '#b91c1c',
+                            backgroundColor: '#b91c1c',
                             borderWidth: 2,
                             pointRadius: 3,
                             fill: false
